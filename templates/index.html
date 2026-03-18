@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello!</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #1a1a2e; }
+        p.subtitle { color: #666; margin-bottom: 28px; font-size: 0.95rem; }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus { border-color: #4f46e5; }
+
+        button {
+            margin-top: 16px;
+            width: 100%;
+            padding: 12px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover { background: #4338ca; }
+
+        .message {
+            margin-top: 20px;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 1rem;
+            display: none;
+        }
+
+        .message.error {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffc107;
+        }
+
+        .message.angry {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>👋 Hello!</h1>
+        <p class="subtitle">What's your name?</p>
+
+        <input type="text" id="nameInput" placeholder="Enter your name..." autofocus />
+        <button onclick="submitName()">Submit</button>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        let attempt = 0;
+
+        document.getElementById("nameInput").addEventListener("keydown", function(e) {
+            if (e.key === "Enter") submitName();
+        });
+
+        async function submitName() {
+            const input = document.getElementById("nameInput");
+            const name = input.value.trim();
+            const msg = document.getElementById("message");
+
+            if (!name) return;
+
+            const res = await fetch("/greet", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name })
+            });
+
+            const data = await res.json();
+
+            msg.style.display = "block";
+            msg.className = "message";
+
+            if (data.status === "ok") {
+                msg.classList.add("success");
+                msg.textContent = data.message;
+                input.disabled = true;
+                document.querySelector("button").disabled = true;
+            } else if (data.status === "returning") {
+                const insults = [
+                    `Oh no. Not you again, ${data.name}. We were having such a lovely time without you.`,
+                    `${data.name}? Again?! Did you forget we don't like you here?`,
+                    `Ah, ${data.name}. Back again like a bad smell. How thoroughly unsurprising.`,
+                    `Oh wonderful. ${data.name} has graced us with their presence. Again. Nobody asked.`,
+                    `${data.name}! Still alive then. Pity.`,
+                ];
+                const insult = insults[Math.floor(Math.random() * insults.length)];
+                msg.classList.add("angry");
+                msg.textContent = insult;
+                input.disabled = true;
+                document.querySelector("button").disabled = true;
+            } else if (data.status === "need_full_name") {
+                attempt++;
+                if (attempt >= 2) {
+                    msg.classList.add("angry");
+                    msg.textContent = `Oh, BRILLIANT. '${name}'. Again. ONE name. STILL just one name. Absolutely unbelievable. We're done here. Goodbye.`;
+                    input.disabled = true;
+                    document.querySelector("button").disabled = true;
+                } else {
+                    msg.classList.add("error");
+                    msg.textContent = `'${name}'? Just the one name? How delightfully peasant-like. Kindly furnish us with your full name, if it isn't too much trouble.`;
+                    input.value = "";
+                    input.focus();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
