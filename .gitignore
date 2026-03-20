@@ -1,0 +1,2 @@
+# Skill runtime state
+.claude/skills/**/last_invoked.txt
